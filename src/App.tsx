@@ -4,6 +4,8 @@ import Register from "./pages/register";
 import ProtectedRoute from "./guards/ProtectedRoute";
 import PublicRoute from "./guards/PublicRoute";
 import Home from "./pages/home";
+import Trips from "./pages/trips";
+import TripDetail from "./pages/trip-detail";
 
 export function App() {
   return (
@@ -14,6 +16,24 @@ export function App() {
         element={
           <ProtectedRoute>
             <Home />
+          </ProtectedRoute>
+        }
+      />
+
+      <Route
+        path="/trips"
+        element={
+          <ProtectedRoute>
+            <Trips />
+          </ProtectedRoute>
+        }
+      />
+
+      <Route
+        path="/trips/:tripId"
+        element={
+          <ProtectedRoute>
+            <TripDetail />
           </ProtectedRoute>
         }
       />

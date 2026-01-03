@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { Link, useNavigate } from "react-router";
 import { useAuth } from "../context/auth.context";
 import SearchDropdown from "../components/SearchDropdown";
 import PlanTripModal from "../components/PlanTripModal";
@@ -35,7 +36,8 @@ type SearchResult = {
 /* ---------------- COMPONENT ---------------- */
 
 export default function Home() {
-  const { user, loading } = useAuth();
+  const { user, loading, logout } = useAuth();
+  const navigate = useNavigate();
 
   const [countries, setCountries] = useState<Country[]>([]);
   const [activities, setActivities] = useState<Activity[]>([]);
@@ -48,6 +50,7 @@ export default function Home() {
 
   const [showPlanTrip, setShowPlanTrip] = useState(false);
   const [initialLoading, setInitialLoading] = useState(true);
+  const [showUserDropdown, setShowUserDropdown] = useState(false);
 
   /* ---------- LOAD HOME DATA ---------- */
   useEffect(() => {
@@ -106,6 +109,27 @@ export default function Home() {
     return () => clearTimeout(timer);
   }, [search]);
 
+  /* ---------- CLOSE DROPDOWN ON OUTSIDE CLICK ---------- */
+  useEffect(() => {
+    function handleClickOutside(event: MouseEvent) {
+      const target = event.target as HTMLElement;
+      if (!target.closest(".user-dropdown")) {
+        setShowUserDropdown(false);
+      }
+    }
+
+    if (showUserDropdown) {
+      document.addEventListener("click", handleClickOutside);
+      return () => document.removeEventListener("click", handleClickOutside);
+    }
+  }, [showUserDropdown]);
+
+  /* ---------- LOGOUT HANDLER ---------- */
+  function handleLogout() {
+    logout();
+    navigate("/login");
+  }
+
   if (loading || initialLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center text-slate-500">
@@ -124,11 +148,34 @@ export default function Home() {
           </h1>
 
           {user ? (
-            <div className="flex items-center gap-3">
-              <div className="w-9 h-9 rounded-full bg-indigo-600 text-white flex items-center justify-center font-medium">
-                {user.first_name?.[0]}
-              </div>
-              <span className="text-sm font-medium">{user.first_name}</span>
+            <div className="relative user-dropdown">
+              <button
+                onClick={() => setShowUserDropdown(!showUserDropdown)}
+                className="flex items-center gap-3 hover:opacity-80 transition"
+              >
+                <div className="w-9 h-9 rounded-full bg-indigo-600 text-white flex items-center justify-center font-medium">
+                  {user.first_name?.[0]}
+                </div>
+                <span className="text-sm font-medium">{user.first_name}</span>
+              </button>
+
+              {showUserDropdown && (
+                <div className="absolute right-0 mt-2 w-48 bg-white border border-slate-200 rounded-lg shadow-lg py-2">
+                  <Link
+                    to="/trips"
+                    className="block px-4 py-2 text-sm text-slate-700 hover:bg-slate-50"
+                    onClick={() => setShowUserDropdown(false)}
+                  >
+                    My Trips
+                  </Link>
+                  <button
+                    onClick={handleLogout}
+                    className="w-full text-left px-4 py-2 text-sm text-slate-700 hover:bg-slate-50"
+                  >
+                    Logout
+                  </button>
+                </div>
+              )}
             </div>
           ) : (
             <button className="px-5 py-2 text-sm border rounded-full hover:bg-slate-100">
@@ -225,14 +272,15 @@ export default function Home() {
 
           {trips.length === 0 ? (
             <div className="border border-dashed border-slate-300 rounded-2xl p-10 text-slate-500">
-              You haven’t planned a trip yet.
+              You haven't planned a trip yet.
             </div>
           ) : (
             <div className="flex gap-6 overflow-x-auto pb-4">
               {trips.map((t) => (
-                <div
+                <Link
                   key={t.trip_id}
-                  className="min-w-[280px] rounded-2xl border border-slate-200 bg-white p-5 hover:shadow transition"
+                  to={`/trips/${t.trip_id}`}
+                  className="min-w-[280px] rounded-2xl border border-slate-200 bg-white p-5 hover:shadow-md transition cursor-pointer"
                 >
                   <h4 className="font-semibold">{t.trip_name}</h4>
                   <p className="text-sm text-slate-500 mt-1">
@@ -241,7 +289,7 @@ export default function Home() {
                   <p className="mt-4 text-emerald-600 font-medium">
                     Budget: ₹ {t.total_budget}
                   </p>
-                </div>
+                </Link>
               ))}
             </div>
           )}

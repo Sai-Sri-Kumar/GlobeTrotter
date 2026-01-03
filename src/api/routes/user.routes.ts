@@ -3,6 +3,8 @@ import { login } from "../controllers/user/login.controller";
 import { getMe } from "../controllers/user/me.controller";
 import { homeOverview } from "../controllers/user/home";
 import { getMyTrips } from "../controllers/user/trip";
+import { getTripDetail } from "../controllers/user/trip-detail";
+import { deleteTrip } from "../controllers/user/delete-trip";
 import { searchController } from "../controllers/user/search";
 import { getCountries } from "../controllers/user/country";
 import { getActivities } from "../controllers/user/activity";
@@ -40,5 +42,9 @@ export const authRoutes = {
 
   "/api/trips/create": {
     POST: createTrip,
+  },
+  "/api/trips/:tripId": {
+    GET: getTripDetail,
+    DELETE: deleteTrip,
   },
 };
