@@ -1,11 +1,16 @@
 import sql from "../../db/connect";
 
+function getDateFromDay(startDate: string, day: number) {
+  const date = new Date(startDate);
+  date.setDate(date.getDate() + (day - 1));
+  return date.toISOString().split("T")[0];
+}
+
 export async function createTrip(req: Request) {
   try {
     const body = await req.json();
 
-    const { user_id, trip_name, start_date, end_date, total_budget, days } =
-      body;
+    const { user_id, trip_name, start_date, end_date, days } = body;
 
     if (
       !user_id ||
@@ -18,7 +23,7 @@ export async function createTrip(req: Request) {
     }
 
     const tripId = await sql.begin(async (tx) => {
-      /* 1️⃣ Create trip */
+      /* 1️⃣ Create trip (budget initially 0) */
       const [trip] = await tx`
         INSERT INTO trip (
           user_id,
@@ -32,16 +37,33 @@ export async function createTrip(req: Request) {
           ${trip_name},
           ${start_date},
           ${end_date},
-          ${total_budget ?? null}
+          0
         )
         RETURNING trip_id
       `;
 
-      /* 2️⃣ Insert trip activities */
+      let totalBudget = 0;
+
+      /* 2️⃣ Insert activities + accumulate cost */
       for (const d of days) {
-        if (!Array.isArray(d.activities)) continue;
+        if (!d.day || !Array.isArray(d.activities)) continue;
+
+        const scheduledDate = getDateFromDay(start_date, d.day);
 
         for (const activity_id of d.activities) {
+          // Fetch activity cost
+          const [activity] = await tx`
+            SELECT cost
+            FROM activity
+            WHERE activity_id = ${activity_id}
+          `;
+
+          if (!activity) {
+            throw new Error(`Invalid activity_id: ${activity_id}`);
+          }
+
+          totalBudget += Number(activity.cost);
+
           await tx`
             INSERT INTO trip_activity (
               trip_id,
@@ -51,11 +73,18 @@ export async function createTrip(req: Request) {
             VALUES (
               ${trip.trip_id},
               ${activity_id},
-              ${d.date ?? null}
+              ${scheduledDate}
             )
           `;
         }
       }
+
+      /* 3️⃣ Update trip with final budget */
+      await tx`
+        UPDATE trip
+        SET total_budget = ${totalBudget}
+        WHERE trip_id = ${trip.trip_id}
+      `;
 
       return trip.trip_id;
     });

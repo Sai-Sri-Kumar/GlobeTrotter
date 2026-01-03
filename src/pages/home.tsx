@@ -71,13 +71,14 @@ export default function Home() {
       setActivities(fallbackActivities);
     }
 
-    if (user) {
+    if (user?.user_id) {
       try {
-        const tripRes = await fetch("/api/trips/my", {
-          credentials: "include",
-        });
+        const tripRes = await fetch(`/api/trips/my?user_id=${user.user_id}`);
+
         if (tripRes.ok) {
           setTrips(await tripRes.json());
+        } else {
+          setTrips([]);
         }
       } catch {
         setTrips([]);
@@ -265,7 +266,7 @@ export default function Home() {
         </div>
       </section>
 
-      {/* ================= USER TRIPS ================= */}
+      {/* ================= USER TRIPS (HORIZONTAL) ================= */}
       {user && (
         <section className="max-w-7xl mx-auto px-8 py-20">
           <h3 className="text-2xl font-semibold mb-8">Your Trips</h3>
@@ -275,21 +276,58 @@ export default function Home() {
               You haven't planned a trip yet.
             </div>
           ) : (
-            <div className="flex gap-6 overflow-x-auto pb-4">
+            <div
+              className="
+                flex gap-6
+                overflow-x-auto
+                scroll-smooth
+                snap-x snap-mandatory
+                pb-6
+                [-ms-overflow-style:none]
+                [scrollbar-width:none]
+                [&::-webkit-scrollbar]:hidden
+              "
+            >
               {trips.map((t) => (
                 <Link
                   key={t.trip_id}
                   to={`/trips/${t.trip_id}`}
                   className="min-w-[280px] rounded-2xl border border-slate-200 bg-white p-5 hover:shadow-md transition cursor-pointer"
+                  className="
+                    snap-start
+                    min-w-[320px]
+                    max-w-[320px]
+                    rounded-2xl
+                    border border-slate-200
+                    bg-white
+                    p-6
+                    hover:shadow-lg
+                    transition
+                  "
                 >
-                  <h4 className="font-semibold">{t.trip_name}</h4>
+                  <h4 className="font-semibold text-lg">{t.trip_name}</h4>
+
                   <p className="text-sm text-slate-500 mt-1">
-                    {t.start_date} → {t.end_date}
-                  </p>
-                  <p className="mt-4 text-emerald-600 font-medium">
-                    Budget: ₹ {t.total_budget}
+                    {new Date(t.start_date).toLocaleDateString()} →{" "}
+                    {new Date(t.end_date).toLocaleDateString()}
                   </p>
                 </Link>
+
+                  <div className="mt-6 flex justify-between items-center">
+                    <span className="text-emerald-600 font-semibold">
+                      ₹ {t.total_budget}
+                    </span>
+
+                    <span className="text-xs text-slate-400">
+                      {Math.ceil(
+                        (new Date(t.end_date).getTime() -
+                          new Date(t.start_date).getTime()) /
+                          (1000 * 60 * 60 * 24),
+                      ) + 1}{" "}
+                      days
+                    </span>
+                  </div>
+                </div>
               ))}
             </div>
           )}
