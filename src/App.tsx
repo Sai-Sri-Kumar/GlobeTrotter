@@ -4,6 +4,7 @@ import Register from "./pages/register";
 import ProtectedRoute from "./guards/ProtectedRoute";
 import PublicRoute from "./guards/PublicRoute";
 import Home from "./pages/home";
+import TripDetails from "./components/TripDetails";
 
 export function App() {
   return (
@@ -36,6 +37,7 @@ export function App() {
           </PublicRoute>
         }
       />
+      <Route path="/trips/:tripId" element={<TripDetails />} />
     </Routes>
   );
 }

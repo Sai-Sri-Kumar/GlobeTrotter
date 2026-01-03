@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { useNavigate } from "react-router";
 import { useAuth } from "../context/auth.context";
 import SearchDropdown from "../components/SearchDropdown";
 import PlanTripModal from "../components/PlanTripModal";
@@ -36,6 +37,7 @@ type SearchResult = {
 
 export default function Home() {
   const { user, loading } = useAuth();
+  const navigate = useNavigate();
 
   const [countries, setCountries] = useState<Country[]>([]);
   const [activities, setActivities] = useState<Activity[]>([]);
@@ -71,11 +73,8 @@ export default function Home() {
     if (user?.user_id) {
       try {
         const tripRes = await fetch(`/api/trips/my?user_id=${user.user_id}`);
-
         if (tripRes.ok) {
           setTrips(await tripRes.json());
-        } else {
-          setTrips([]);
         }
       } catch {
         setTrips([]);
@@ -118,50 +117,43 @@ export default function Home() {
   return (
     <div className="min-h-screen bg-slate-50 text-slate-900">
       {/* ================= HEADER ================= */}
-      <header className="sticky top-0 z-40 bg-white border-b border-slate-200">
+      <header className="sticky top-0 z-40 bg-white border-b">
         <div className="max-w-7xl mx-auto px-8 py-4 flex justify-between items-center">
           <h1 className="text-xl font-semibold text-indigo-600">
             GlobalTrotter
           </h1>
 
-          {user ? (
+          {user && (
             <div className="flex items-center gap-3">
-              <div className="w-9 h-9 rounded-full bg-indigo-600 text-white flex items-center justify-center font-medium">
+              <div className="w-9 h-9 rounded-full bg-indigo-600 text-white flex items-center justify-center">
                 {user.first_name?.[0]}
               </div>
               <span className="text-sm font-medium">{user.first_name}</span>
             </div>
-          ) : (
-            <button className="px-5 py-2 text-sm border rounded-full hover:bg-slate-100">
-              Sign in
-            </button>
           )}
         </div>
       </header>
 
-      {/* ================= HERO + SEARCH ================= */}
+      {/* ================= HERO ================= */}
       <section className="bg-gradient-to-b from-indigo-50 to-white">
         <div className="max-w-7xl mx-auto px-8 py-24 text-center">
           <h2 className="text-5xl font-semibold mb-6">Where to?</h2>
           <p className="text-slate-600 mb-12">
-            Discover destinations and experiences around the world
+            Discover destinations and experiences
           </p>
 
           <div className="relative max-w-3xl mx-auto">
-            <div className="flex items-center bg-white border border-slate-200 rounded-full shadow-sm focus-within:ring-2 focus-within:ring-indigo-500">
+            <div className="flex bg-white border rounded-full shadow-sm">
               <input
                 value={search}
                 onChange={(e) => {
                   setSearch(e.target.value);
                   setShowSearch(true);
                 }}
-                className="flex-1 px-6 py-4 outline-none bg-transparent"
+                className="flex-1 px-6 py-4 outline-none"
                 placeholder="Search countries or activities…"
               />
-              <button
-                disabled={search.length < 2}
-                className="px-10 py-4 bg-indigo-600 text-white rounded-full disabled:opacity-40"
-              >
+              <button className="px-10 py-4 bg-indigo-600 text-white rounded-full">
                 Search
               </button>
             </div>
@@ -176,84 +168,57 @@ export default function Home() {
         </div>
       </section>
 
-      {/* ================= TOP DESTINATIONS ================= */}
+      {/* ================= ACTIVITIES ================= */}
       <section className="max-w-7xl mx-auto px-8 py-16">
-        <h3 className="text-2xl font-semibold mb-8">Top Destinations</h3>
+        <h3 className="text-2xl font-semibold mb-8">Things to Do</h3>
 
-        <div className="grid grid-cols-2 md:grid-cols-3 gap-6">
-          {countries.map((c) => (
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
+          {activities.map((a) => (
             <div
-              key={c.country_id}
-              className="h-52 rounded-2xl bg-white border border-slate-200 p-5 flex flex-col justify-end hover:shadow-md transition"
+              key={a.activity_id}
+              className="rounded-2xl border bg-white p-5 hover:shadow transition"
             >
-              <h4 className="text-lg font-semibold">{c.country_name}</h4>
-              <p className="text-sm text-slate-500">{c.region}</p>
+              <h4 className="font-semibold">{a.name}</h4>
+              <p className="text-sm text-slate-500">{a.activity_type}</p>
+
+              <div className="mt-4 flex justify-between text-sm">
+                <span className="text-emerald-600 font-medium">₹ {a.cost}</span>
+                <span>⭐ {a.rating}</span>
+              </div>
             </div>
           ))}
         </div>
       </section>
 
-      {/* ================= ACTIVITIES ================= */}
-      <section className="bg-white">
-        <div className="max-w-7xl mx-auto px-8 py-16">
-          <h3 className="text-2xl font-semibold mb-8">Things to Do</h3>
-
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
-            {activities.map((a) => (
-              <div
-                key={a.activity_id}
-                className="rounded-2xl border border-slate-200 bg-slate-50 p-5 hover:bg-white hover:shadow transition"
-              >
-                <h4 className="font-semibold">{a.name}</h4>
-                <p className="text-sm text-slate-500">{a.activity_type}</p>
-
-                <div className="mt-4 flex justify-between text-sm">
-                  <span className="text-emerald-600 font-medium">
-                    ₹ {a.cost}
-                  </span>
-                  <span>⭐ {a.rating}</span>
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* ================= USER TRIPS (HORIZONTAL) ================= */}
+      {/* ================= USER TRIPS (CLICKABLE) ================= */}
       {user && (
         <section className="max-w-7xl mx-auto px-8 py-20">
           <h3 className="text-2xl font-semibold mb-8">Your Trips</h3>
 
           {trips.length === 0 ? (
-            <div className="border border-dashed border-slate-300 rounded-2xl p-10 text-slate-500">
+            <div className="border border-dashed rounded-2xl p-10 text-slate-500">
               You haven’t planned a trip yet.
             </div>
           ) : (
             <div
               className="
-                flex gap-6
-                overflow-x-auto
-                scroll-smooth
-                snap-x snap-mandatory
-                pb-6
-                [-ms-overflow-style:none]
-                [scrollbar-width:none]
+                flex gap-6 overflow-x-auto snap-x snap-mandatory
+                pb-6 scroll-smooth
                 [&::-webkit-scrollbar]:hidden
               "
             >
               {trips.map((t) => (
                 <div
                   key={t.trip_id}
+                  onClick={() =>
+                    navigate(`/trips/${t.trip_id}`, {
+                      state: { trip: t },
+                    })
+                  }
                   className="
-                    snap-start
-                    min-w-[320px]
-                    max-w-[320px]
-                    rounded-2xl
-                    border border-slate-200
-                    bg-white
-                    p-6
-                    hover:shadow-lg
-                    transition
+                    snap-start min-w-[320px] max-w-[320px]
+                    rounded-2xl border bg-white p-6
+                    hover:shadow-lg cursor-pointer transition
                   "
                 >
                   <h4 className="font-semibold text-lg">{t.trip_name}</h4>
@@ -263,11 +228,10 @@ export default function Home() {
                     {new Date(t.end_date).toLocaleDateString()}
                   </p>
 
-                  <div className="mt-6 flex justify-between items-center">
+                  <div className="mt-6 flex justify-between">
                     <span className="text-emerald-600 font-semibold">
                       ₹ {t.total_budget}
                     </span>
-
                     <span className="text-xs text-slate-400">
                       {Math.ceil(
                         (new Date(t.end_date).getTime() -
@@ -287,7 +251,7 @@ export default function Home() {
       {/* ================= CTA ================= */}
       <button
         onClick={() => setShowPlanTrip(true)}
-        className="fixed bottom-6 right-6 bg-emerald-500 text-white px-7 py-3 rounded-full shadow-xl hover:bg-emerald-600"
+        className="fixed bottom-6 right-6 bg-emerald-500 text-white px-7 py-3 rounded-full shadow-xl"
       >
         + Plan a Trip
       </button>
